@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Final</string>
+    <string name="title_activity_donator">Map</string>
 </resources>

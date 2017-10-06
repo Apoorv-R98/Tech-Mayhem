@@ -1,13 +1,19 @@
 package com.example.asus.afinal;
 
+import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.Build;
 import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
@@ -16,6 +22,7 @@ import com.parse.ParseException;
 import com.parse.ParseGeoPoint;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
+import com.parse.ParseUser;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -82,7 +89,7 @@ public class ViewRequestsActivity extends AppCompatActivity {
         super.onRequestPermissionsResult(requestCode,permissions,grantResults);
         if (requestCode==1){
             if (grantResults.length>0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
-                if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)=PackageManager.PERMISSION_GRANTED){
+                if (ContextCompat.checkSelfPermission(this,android.Manifest.permission.ACCESS_FINE_LOCATION)=PackageManager.PERMISSION_GRANTED){
                     locationManager.requestLocationUpdates(locationManager.GPS_PROVIDER,0,0,locationListener);
                     Location lastKnownLocation=locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
                     updateListView(lastKnownLocation);
@@ -98,10 +105,69 @@ public class ViewRequestsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_view_requests);
 
     setTitle("Nearby Requests");
-        
+        requestListView = (ListView) findViewById(R.id.requestListView);
+        arrayAdapter = new ArrayAdapter(this,android.R.layout.simple_list_item_1,requests);
+        requests.clear();
+        requests.add("Getting Nearby Requests");
+        requestListView.setAdapter(arrayAdapter);
+        requestListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                if (Build.VERSION.SDK_INT<23 || ContextCompat.checkSelfPermission(ViewRequestsActivity.this, android.Manifest.permission.ACCESS_FINE_LOCATION)==PackageManager.PERMISSION_GRANTED){
+                    Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                    if (requestLatitudes.size()>i && requestLongitudes.size()>i && usernames.size()>i && lastKnownLocation != null){
+                        Intent intent=new Intent(getApplicationContext(),DriverLoactionActivity.class);
+                        intent.putExtra("requestLatitude",requestLatitudes.get(i));
+                        intent.putExtra("requestLongitude",requestLongitudes.get(i));
+                        intent.putExtra("driverLatitude",lastKnownLocation.getLatitude());
+                        intent.putExtra("driverLongitude",lastKnownLocation.getLongitude());
+                        intent.putExtra("username",usernames.get(i));
+                        startActivity(intent);
+                    }
+                }
+            }
+        } );
 
+        locationManager =(LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+        locationListener= new LocationListener() {
+            @Override
+            public void onLocationChanged(Location location) {
+                updateListView(location);
+                ParseUser.getCurrentUser().put("location",new ParseGeoPoint(location.getLatitude(),location.getLongitude()));
+                ParseUser.getCurrentUser().saveInBackground();
+            }
 
+            @Override
+            public void onStatusChanged(String s, int i, Bundle bundle) {
 
+            }
+
+            @Override
+            public void onProviderEnabled(String s) {
+
+            }
+
+            @Override
+            public void onProviderDisabled(String s) {
+
+            }
+        };
+        if(Build.VERSION.SDK_INT<23){
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,0,0,LocationListener);
+
+        }else{
+            if(ContextCompat.checkSelfPermission(this,android.Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED){
+                ActivityCompat.requestPermissions(this,new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},1);
+
+            }else{
+                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,0,0,locationListener)
+                Location lastKnownLoaction=locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                if (lastKnownLoaction!=null)
+                {
+                    updateListView(lastKnownLoaction);
+                }
+            }
+        }
 
 
 

@@ -23,7 +23,7 @@ public void redirectActivity(){
     }
     else
     {
-        Intent intent = new Intent(getApplicationContext(),ViewRequestActivity.class);
+        Intent intent = new Intent(getApplicationContext(),ViewRequestsActivity.class);
         startActivity(intent);
     }
 
